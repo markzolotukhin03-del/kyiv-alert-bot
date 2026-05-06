@@ -1,6 +1,8 @@
 import os
 import time
+import threading
 import requests
+from flask import Flask
 
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 CHANNEL_ID = os.environ["CHANNEL_ID"]
@@ -8,16 +10,21 @@ CHANNEL_ID = os.environ["CHANNEL_ID"]
 # Публичный API без ключа. Источник неофициальный.
 ALERTS_URL = "https://ubilling.net.ua/aerialalerts/"
 
-# Ищем Киев в ответе API
 KYIV_KEYWORDS = [
     "м. Київ",
     "Київ",
-    "Київська",
     "Kyiv",
     "Kiev",
 ]
 
 last_status = None
+
+app = Flask(__name__)
+
+
+@app.route("/")
+def home():
+    return "KYIV NEWS alert bot is running"
 
 
 def send_message(text: str) -> None:
@@ -48,10 +55,10 @@ def get_kyiv_alert_status() -> bool:
     return False
 
 
-def main() -> None:
+def alert_loop() -> None:
     global last_status
 
-    print("KYIV NEWS alert bot started")
+    print("KYIV NEWS alert monitor started")
 
     while True:
         try:
@@ -89,4 +96,7 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    threading.Thread(target=alert_loop, daemon=True).start()
+
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
